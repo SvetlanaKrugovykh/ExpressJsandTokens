@@ -2,11 +2,6 @@ const mongoose = require('mongoose');
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const { JWT_SECRET } = process.env;
-
-const { REFRESH_TOKEN_SECRET } = process.env;
-
-
 const UserSchema = new mongoose.Schema({
 	email: {
 		type: String,
@@ -38,7 +33,7 @@ const UserSchema = new mongoose.Schema({
 		type: String,
 		required: true,
 		minlength: 4,
-		maxlength: 16,
+		maxlength: 100,
 	},
 	activated: {
 		type: Boolean,
@@ -67,20 +62,22 @@ const UserSchema = new mongoose.Schema({
 
 UserSchema.methods.generateAuthToken = function () {
 	const User = this;
-	const secret = JWT_SECRET;
+	const secret = process.env.JWT_SECRET;
 	const token = jwt.sign({ _id: User._id }, secret, {
 		expiresIn: '2m',
 	},);
 	User.token = token;
+	return token;
 }
 
 UserSchema.methods.generateRefreshToken = function () {
 	const User = this;
-	const secret = REFRESH_TOKEN_SECRET;
+	const secret = process.env.REFRESH_TOKEN_SECRET;
 	const refreshToken = jwt.sign({ _id: User._id }, secret, {
 		expiresIn: '5m',
 	},);
 	User.refreshToken = refreshToken;
+	return refreshToken;
 }
 
 UserSchema.pre('save', async function (next) {

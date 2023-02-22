@@ -1,0 +1,18 @@
+The logic of the authorization  is (in methods)
+
+•	/register  (email + passwd)  without token. Creating user in DB, sending email with verification code
+
+•	/activate (email + passwd + verificationCode from email) without token. Activating user in DB
+
+*	The tockens for access and update are in the .env (JWT_SECRET and REFRESH_TOKEN_SECRET) and also the REFRESH_TOKEN_LIFE    
+
+•	/login (email + passwd) without token. Creating 2 tokens: authToken & refreshToken. (temprorary return of both of them)
+
+•	/logout (email + passwd) without token. Clear tokens in DB
+
+•	/refresh (email + passwd + refresh token) and return auth token (refresh).
+
+• ...
+
+•	Everything else answered only if token come (req.body.token || req.query.token || req.headers.token)
+

@@ -1,12 +1,16 @@
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const { sendVerificationEmail } = require('../common/sendouter');
+
 
 exports.newUser = async (req, res) => {
 	try {
 		const { email, password } = req.body;
-
 		const user = await User.findOne({ email });
+		const verificationCode = Math.floor(
+			Math.random() * Math.floor(999999),
+		).toString();
 
 		if (user) {
 			return res.status(400).send({
@@ -17,9 +21,11 @@ exports.newUser = async (req, res) => {
 		const newUser = new User({
 			email,
 			password,
+			verificationCode,
 		});
-
 		await newUser.save();
+
+		await sendVerificationEmail(email, verificationCode);
 
 		res.status(201).send({
 			data: {
@@ -28,6 +34,52 @@ exports.newUser = async (req, res) => {
 				createdAt: newUser.createdAt,
 			},
 		});
+	} catch (error) {
+		res.status(500).send({
+			status: 500,
+			error: error.message,
+		});
+	}
+}
+
+exports.activateUser = async (req, res) => {
+	try {
+		const { email, password, verificationCode } = req.body;
+		const user = await User.findOne({ email });
+
+		if (!user) {
+			return res.status(404).send({ message: 'User not found' });
+		}
+
+		if (user.activated) { return res.status(400).send({ message: 'User already activated' }); }
+
+		const passwordEquals = await bcrypt.compare(password, user.password);
+		if (!passwordEquals) {
+			return res.status(400).send({ message: 'Incorrect password' });
+		}
+
+		if (
+			new Date().getTime() - user.createdAt >
+			Number(process.env.VERIFICATION_CODE_TIME)
+		) { return res.status(400).send({ message: 'Verification code expired' }); }
+
+		if (user.verificationCode !== verificationCode) {
+			return res.status(400).send({ message: 'Incorrect verification code' });
+		}
+
+		user.activated = true;
+		user.save();
+
+		res.status(201).send({
+			data: {
+				email: user.email,
+				activated: user.activated,
+				createdAt: user.createdAt,
+			},
+		});
+
+
+
 	} catch (error) {
 		res.status(500).send({
 			status: 500,
@@ -137,9 +189,9 @@ exports.deleteUser = async (req, res) => {
 exports.loginUser = async (req, res) => {
 	try {
 		const { email, password } = req.body;
-		const user = await User.findOne({ email }).exec();
+		const user = await User.findOne({ email });
 
-		if (!user) {
+		if (!user || !user.activated) {
 			return res.status(401).send({
 				message: 'User not found',
 			});
@@ -152,12 +204,16 @@ exports.loginUser = async (req, res) => {
 			});
 		}
 
-		await user.generateAuthToken();
-		await user.generateRefreshToken();
+		const authToken = await user.generateAuthToken();
+		const refreshToken = await user.generateRefreshToken();
 
 		res.status(200).send({
-			data: user,
-			message: "login successful",
+			data: {
+				email: user.email,
+				message: "login successful",
+				authToken: authToken,
+				refreshToken: refreshToken,   //temprorary
+			},
 		});
 	} catch (error) {
 		res.status(500).send({
@@ -185,10 +241,13 @@ exports.refreshTokenUser = async (req, res) => {
 			});
 		}
 
-		await user.generateAuthToken();
+		const authToken = await user.generateAuthToken();
+
 		res.status(200).send({
-			data: user.token,
-			message: 'Refresh token successful',
+			data: {
+				authToken: authToken,
+				message: 'Refresh token successful',
+			},
 		});
 	} catch (error) {
 		console.log(error);
