@@ -1,12 +1,14 @@
 const createError = require('http-errors');
 const express = require('express');
 const path = require('path');
+const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const mongoose = require('mongoose');
 
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
+const myCabinet = require('./routes/myCabinet');
 
 const app = express();
 
@@ -19,9 +21,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(bodyParser.raw({ type: 'image/jpeg', limit: '10mb' }));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/my-cabinet', myCabinet);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
