@@ -1,6 +1,6 @@
 const sharp = require('sharp');
 const awsService = require('../common/aws/aws.services');
-const { raw } = require('express');
+const LiqPay = require('liqpay');
 
 exports.uploadAvatar = async (req, res) => {
 	try {
@@ -28,31 +28,24 @@ exports.uploadAvatar = async (req, res) => {
 
 exports.payment = async (req, res) => {
 	try {
-		const { amount, currency, order_id, card_number, exp_month, exp_year, cvv } = req.body;
-		const paymentData = {
-			merchantAccount: 'YOUR_MERCHANT_ACCOUNT',
-			merchantDomainName: 'YOUR_MERCHANT_DOMAIN_NAME',
-			authorizationType: 'SimpleSignature',
-			currency: currency,
-			amount: amount,
-			orderReference: order_id,
-			productName: 'Product',
-			productPrice: amount,
-			language: 'en',
-			serviceUrl: 'https://your-service-url.com/payment-status',
-			returnUrl: 'https://your-return-url.com',
-			card: {
-				number: card_number,
-				expMonth: exp_month,
-				expYear: exp_year,
-				cvv: cvv
-			}
-		};
-
-		// 	const wayforpayResponse = await wayforpay.initPayment(paymentData);
-		// 	res.json({ payment_url: wayforpayResponse.paymentUrl });
+		const x = req.headers?.x?.trim();
+		const public_key = process.env.LIQPAY_PUBLIC_KEY_ + x;
+		const private_key = process.env.LIQPAY_PRIVATE_KEY_ + x;
+		const liqpay = new LiqPay(public_key, private_key);
+		liqpay.api("request", {
+			"action": "payqr",
+			"version": "3",
+			"amount": "1",
+			"currency": "UAH",
+			"description": "description text",
+			"order_id": "order_id_1"
+		}, function (json) {
+			console.log(json.status);
+		});
 	} catch (error) {
-		// 	res.status(500).json({ message: error.message });
-		// }
+		res.status(500).send({
+			status: 500,
+			error: error.message,
+		});
 	}
-};
+}
