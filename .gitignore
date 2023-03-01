@@ -7,6 +7,7 @@
 .development.env
 .production.env
 
+*.jpeg
 # Logs
 logs
 *.log
