@@ -29,7 +29,7 @@ exports.uploadAvatar = async (req, res) => {
 exports.payment = async (req, res) => {
 	try {
 		const x = req.headers?.x?.trim();
-		const reqType = req.headers?.reqType?.trim();   //'card';
+		const reqType = 'card'; // req.headers?.reqType?.trim();   // 'card' or 'qr'
 		const public_key = process.env[`LIQPAY_PUBLIC_KEY_${x}`];
 		const private_key = process.env[`LIQPAY_PRIVATE_KEY_${x}`];
 		const liqpay = new LiqPay(public_key, private_key);
@@ -63,6 +63,11 @@ exports.payment = async (req, res) => {
 					"card_cvv": card_cvv
 				}, function (json) {
 					console.log(json.status);
+					res.status(200).send({
+						status: 200,
+						message: 'File uploaded successfully',
+						data: json,
+					});
 				});
 				break;
 			case 'qr': {
@@ -75,6 +80,11 @@ exports.payment = async (req, res) => {
 					"order_id": order_id,
 				}, function (json) {
 					console.log(json.status);
+					res.status(200).send({
+						status: 200,
+						message: 'File uploaded successfully',
+						data: json,
+					});
 				});
 				break;
 			}

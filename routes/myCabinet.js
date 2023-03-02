@@ -4,6 +4,6 @@ const myCabinetController = require('../controllers/myCabinet.controller');
 
 router.post('/upload-avatar', myCabinetController.uploadAvatar);
 
-router.post('/paymment', myCabinetController.payment);
+router.post('/payment', myCabinetController.payment);
 
 module.exports = router;

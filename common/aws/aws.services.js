@@ -1,11 +1,14 @@
-const AWS = require('aws-sdk');
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 
-class awsService {
+class AwsService {
 	constructor(convertService) {
 		this.AWS_S3_BUCKET = process.env.AWS_S3_BUCKET;
-		this.s3 = new AWS.S3({
-			accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-			secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+		this.s3 = new S3Client({
+			region: 'eu-central-1',
+			credentials: {
+				accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+				secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+			},
 		});
 		this.convertService = convertService;
 	}
@@ -15,11 +18,12 @@ class awsService {
 			Bucket: this.AWS_S3_BUCKET,
 			Key: key,
 			Body: buffer,
-			ContentType: 'image/jpeg',
+			ContentType: "image/jpeg",
 		};
-		const upload = this.s3.upload(params);
-		return upload.promise();
+		const command = new PutObjectCommand(params);
+		const upload = await this.s3.send(command);
+		return upload;
 	}
 }
 
-module.exports = awsService;
+module.exports = AwsService;
