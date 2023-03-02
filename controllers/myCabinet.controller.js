@@ -29,19 +29,59 @@ exports.uploadAvatar = async (req, res) => {
 exports.payment = async (req, res) => {
 	try {
 		const x = req.headers?.x?.trim();
-		const public_key = process.env.LIQPAY_PUBLIC_KEY_ + x;
-		const private_key = process.env.LIQPAY_PRIVATE_KEY_ + x;
+		const reqType = req.headers?.reqType?.trim();   //'card';
+		const public_key = process.env[`LIQPAY_PUBLIC_KEY_${x}`];
+		const private_key = process.env[`LIQPAY_PRIVATE_KEY_${x}`];
 		const liqpay = new LiqPay(public_key, private_key);
-		liqpay.api("request", {
-			"action": "payqr",
-			"version": "3",
-			"amount": "1",
-			"currency": "UAH",
-			"description": "description text",
-			"order_id": "order_id_1"
-		}, function (json) {
-			console.log(json.status);
-		});
+		const {
+			card_number,
+			card_exp_month,
+			card_exp_year,
+			card_cvv,
+			order_id,
+			SUM,
+			description,
+			phoneNumber
+		} = req.body;
+
+		switch (reqType) {
+			case 'card':
+				if (!card_number || !card_exp_month || !card_exp_year || !card_cvv || !order_id || !SUM) {
+					throw new Error('Invalid card data');
+				}
+				liqpay.api("request", {
+					"action": "pay",
+					"version": "3",
+					"phone": phoneNumber,
+					"amount": SUM,
+					"currency": "UAH",
+					"description": description,
+					"order_id": order_id,
+					"card": card_number,
+					"card_exp_month": card_exp_month,
+					"card_exp_year": card_exp_year,
+					"card_cvv": card_cvv
+				}, function (json) {
+					console.log(json.status);
+				});
+				break;
+			case 'qr': {
+				liqpay.api("request", {
+					"action": "payqr",
+					"version": "3",
+					"amount": SUM,
+					"currency": "UAH",
+					"description": description,
+					"order_id": order_id,
+				}, function (json) {
+					console.log(json.status);
+				});
+				break;
+			}
+			default: {
+				throw new Error('Invalid request type');
+			}
+		}
 	} catch (error) {
 		res.status(500).send({
 			status: 500,
@@ -49,3 +89,4 @@ exports.payment = async (req, res) => {
 		});
 	}
 }
+
